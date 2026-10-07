@@ -46,7 +46,7 @@ else:
                 try:
                     # Llamada al modelo Gemini Flash
                     response = client.models.generate_content(
-                        model="gemini-2.0-flash", contents=prompt
+                        model="gemini-3.8-flash", contents=prompt
                     )
                     answer = response.text
                     st.markdown(answer)
