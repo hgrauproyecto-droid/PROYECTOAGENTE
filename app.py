@@ -43,9 +43,9 @@ else:
         with st.chat_message("assistant"):
             with st.spinner("El agente está respondiendo..."):
                 try:
-                    # Usamos gemini-1.5-flash por su estabilidad en la capa gratuita
+                    # Usamos el modelo correcto y vigente que exige Google
                     response = client.models.generate_content(
-                        model="gemini-1.5-flash", contents=prompt
+                        model="gemini-3.8-flash", contents=prompt
                     )
                     answer = response.text
                     st.markdown(answer)
