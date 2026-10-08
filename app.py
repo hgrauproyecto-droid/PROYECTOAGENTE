@@ -79,7 +79,7 @@ else:
 
                 # Usamos gemini-2.5-flash, modelo totalmente compatible con el SDK actual
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
                     contents=base_context,
                     config=types.GenerateContentConfig(
                         system_instruction=(
