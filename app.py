@@ -77,9 +77,9 @@ else:
                         f"Consulta:\n{prompt}"
                     )
 
-                # Usamos gemini-2.5-flash, modelo totalmente compatible con el SDK actual
+                # Usamos gemini-flash-latest, alias oficial resistente a alta demanda
                 response = client.models.generate_content(
-                    model="gemini-3.8-flash",
+                    model="gemini-flash-latest",
                     contents=base_context,
                     config=types.GenerateContentConfig(
                         system_instruction=(
