@@ -6,7 +6,7 @@ import streamlit as st
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="Sistema Multi-Agente Estable",
+    page_title="Sistema Multi-Agente Autónomo",
     page_icon="👥",
     layout="wide",
 )
@@ -77,9 +77,9 @@ else:
                         f"Consulta:\n{prompt}"
                     )
 
-                # Usamos gemini-1.5-flash, modelo altamente estable en la capa gratuita
+                # Usamos gemini-2.5-flash, modelo totalmente compatible con el SDK actual
                 response = client.models.generate_content(
-                    model="gemini-1.5-flash",
+                    model="gemini-2.5-flash",
                     contents=base_context,
                     config=types.GenerateContentConfig(
                         system_instruction=(
