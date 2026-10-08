@@ -6,16 +6,15 @@ import streamlit as st
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="Sistema Multi-Agente Autónomo",
+    page_title="Sistema Multi-Agente Optimizado",
     page_icon="👥",
     layout="wide",
 )
 
-st.title("👥 Sistema Multi-Agente Autónomo en Cascada (Agentic AI)")
+st.title("👥 Sistema Multi-Agente Autónomo Optimizado (Agentic AI)")
 st.write(
-    "Este sistema coordina tres agentes especializados (Investigador,"
-    " Ejecutor y Auditor) para resolver tus tareas con precisión"
-    " empresarial."
+    "Este sistema unifica las capacidades de investigación, ejecución y"
+    " auditoría en una sola llamada eficiente para evitar límites de cuota."
 )
 
 # Obtener credenciales de forma segura
@@ -55,7 +54,7 @@ else:
 
     # Entrada del usuario
     if prompt := st.chat_input(
-        "Escribe la tarea compleja que requiere un equipo de agentes..."
+        "Escribe la tarea compleja que requiere el equipo de agentes..."
     ):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -63,6 +62,10 @@ else:
 
         with st.chat_message("assistant"):
             status_placeholder = st.empty()
+            status_placeholder.markdown(
+                "🤖 *El equipo multi-agente está procesando, investigando y"
+                " auditando tu solicitud...*"
+            )
 
             try:
                 # Disparar automatización externa si está configurada
@@ -77,78 +80,37 @@ else:
                 if document_context:
                     base_context = (
                         f"Documento de referencia:\n{document_context}\n\n"
-                        f"Petición:\n{prompt}"
+                        f"Petición del usuario:\n{prompt}"
                     )
 
-                # --- PASO 1: AGENTE INVESTIGADOR ---
-                status_placeholder.markdown(
-                    "🔍 **[Agente 1/3] Investigador:** Recopilando datos y"
-                    " analizando contexto..."
-                )
-                config_research = types.GenerateContentConfig(
+                # Sistema multi-agente optimizado en una sola llamada de alta eficiencia
+                config = types.GenerateContentConfig(
                     system_instruction=(
-                        "Eres el Agente Investigador. Tu trabajo es"
-                        " recopilar información clave, buscar en internet"
-                        " datos actualizados y estructurar la base de"
-                        " conocimiento inicial para la tarea."
+                        "Eres un Consejo Directivo y Sistema Multi-Agente"
+                        " Autónomo integrado por tres fases consecutivas que"
+                        " debes mostrar en tu respuesta:\n"
+                        "1. 🔍 **[Agente Investigador]:** Recopila datos y"
+                        " analiza contexto.\n"
+                        "2. ⚙️ **[Agente Ejecutor Técnico]:** Desarrolla la"
+                        " solución práctica o estructura técnica.\n"
+                        "3. 🛡️ **[Agente Auditor de Calidad]:** Revisa posibles"
+                        " fallos, optimiza y presenta el resultado final"
+                        " impecable."
                     ),
-                    tools=[{"google_search": {}}],
+                    tools=[
+                        {"google_search": {}},
+                        {"code_execution": {}},
+                    ],
                 )
-                research_res = client.models.generate_content(
+
+                response = client.models.generate_content(
                     model="gemini-3.8-flash",
                     contents=base_context,
-                    config=config_research,
-                )
-                research_data = research_res.text
-
-                # --- PASO 2: AGENTE EJECUTOR ---
-                status_placeholder.markdown(
-                    "⚙️ **[Agente 2/3] Ejecutor Técnico:** Desarrollando la"
-                    " solución práctica..."
-                )
-                config_executor = types.GenerateContentConfig(
-                    system_instruction=(
-                        "Eres el Agente Ejecutor Técnico. Toma la investigación"
-                        " previa y desarrolla la solución práctica, código,"
-                        " estrategia o contenido requerido de forma detallada."
-                    ),
-                    tools=[{"code_execution": {}}],
-                )
-                executor_res = client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=(
-                        f"Resultados de investigación:\n{research_data}\n\nTarea"
-                        f" original: {prompt}"
-                    ),
-                    config=config_executor,
-                )
-                executor_data = executor_res.text
-
-                # --- PASO 3: AGENTE AUDITOR ---
-                status_placeholder.markdown(
-                    "🛡️ **[Agente 3/3] Auditor de Calidad:** Revisando"
-                    " errores y emitiendo el resultado final..."
-                )
-                config_auditor = types.GenerateContentConfig(
-                    system_instruction=(
-                        "Eres el Agente Auditor de Calidad y Seguridad. Revisa"
-                        " la solución desarrollada por el ejecutor, detecta"
-                        " posibles fallos, optimízala y presenta el resultado"
-                        " final impecable al usuario."
-                    ),
-                )
-                auditor_res = client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=(
-                        f"Solución preliminar a auditar:\n{executor_data}"
-                    ),
-                    config=config_auditor,
+                    config=config,
                 )
 
                 status_placeholder.empty()
-                final_answer = auditor_res.text
-
-                # Mostrar resultado final coordinado
+                final_answer = response.text
                 st.markdown(final_answer)
 
                 st.session_state.messages.append(
@@ -156,4 +118,4 @@ else:
                 )
             except Exception as e:
                 status_placeholder.empty()
-                st.error(f"Ocurrió un error en el flujo multi-agente: {e}")
+                st.error(f"Ocurrió un error en el sistema multi-agente: {e}")
