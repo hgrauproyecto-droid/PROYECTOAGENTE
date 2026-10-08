@@ -6,15 +6,15 @@ import streamlit as st
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="Sistema Multi-Agente Optimizado",
+    page_title="Sistema Multi-Agente Estable",
     page_icon="👥",
     layout="wide",
 )
 
-st.title("👥 Sistema Multi-Agente Autónomo Optimizado (Agentic AI)")
+st.title("👥 Sistema Multi-Agente Autónomo (Versión Estable)")
 st.write(
-    "Este sistema unifica las capacidades de investigación, ejecución y"
-    " auditoría en una sola llamada eficiente para evitar límites de cuota."
+    "Versión optimizada y ligera para operar fluidamente dentro de la cuota"
+    " gratuita."
 )
 
 # Obtener credenciales de forma segura
@@ -42,7 +42,7 @@ else:
                     document_context += page.extract_text() + "\n"
             else:
                 document_context = uploaded_file.read().decode("utf-8")
-            st.success("¡Documento cargado en el sistema multi-agente!")
+            st.success("¡Documento cargado correctamente!")
 
     # Inicializar historial de chat
     if "messages" not in st.session_state:
@@ -53,26 +53,20 @@ else:
             st.markdown(message["content"])
 
     # Entrada del usuario
-    if prompt := st.chat_input(
-        "Escribe la tarea compleja que requiere el equipo de agentes..."
-    ):
+    if prompt := st.chat_input("Escribe tu consulta o tarea..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
             status_placeholder = st.empty()
-            status_placeholder.markdown(
-                "🤖 *El equipo multi-agente está procesando, investigando y"
-                " auditando tu solicitud...*"
-            )
+            status_placeholder.markdown("🤖 *Procesando solicitud...*")
 
             try:
-                # Disparar automatización externa si está configurada
                 if WEBHOOK_URL:
                     requests.post(
                         WEBHOOK_URL,
-                        json={"mensaje": prompt, "origen": "Multi-Agent System"},
+                        json={"mensaje": prompt, "origen": "Agent System"},
                         timeout=5,
                     )
 
@@ -80,33 +74,21 @@ else:
                 if document_context:
                     base_context = (
                         f"Documento de referencia:\n{document_context}\n\n"
-                        f"Petición del usuario:\n{prompt}"
+                        f"Consulta:\n{prompt}"
                     )
 
-                # Sistema multi-agente optimizado en una sola llamada de alta eficiencia
-                config = types.GenerateContentConfig(
-                    system_instruction=(
-                        "Eres un Consejo Directivo y Sistema Multi-Agente"
-                        " Autónomo integrado por tres fases consecutivas que"
-                        " debes mostrar en tu respuesta:\n"
-                        "1. 🔍 **[Agente Investigador]:** Recopila datos y"
-                        " analiza contexto.\n"
-                        "2. ⚙️ **[Agente Ejecutor Técnico]:** Desarrolla la"
-                        " solución práctica o estructura técnica.\n"
-                        "3. 🛡️ **[Agente Auditor de Calidad]:** Revisa posibles"
-                        " fallos, optimiza y presenta el resultado final"
-                        " impecable."
-                    ),
-                    tools=[
-                        {"google_search": {}},
-                        {"code_execution": {}},
-                    ],
-                )
-
+                # Usamos gemini-1.5-flash, modelo altamente estable en la capa gratuita
                 response = client.models.generate_content(
-                    model="gemini-3.8-flash",
+                    model="gemini-1.5-flash",
                     contents=base_context,
-                    config=config,
+                    config=types.GenerateContentConfig(
+                        system_instruction=(
+                            "Eres un sistema multi-agente autónomo estructurado"
+                            " en tres roles que debes presentar claramente en"
+                            " tu respuesta:\n1. 🔍 [Investigador]\n2. ⚙️ [Ejecutor"
+                            " Técnico]\n3. 🛡️ [Auditor de Calidad]"
+                        )
+                    ),
                 )
 
                 status_placeholder.empty()
@@ -118,4 +100,4 @@ else:
                 )
             except Exception as e:
                 status_placeholder.empty()
-                st.error(f"Ocurrió un error en el sistema multi-agente: {e}")
+                st.error(f"Error al conectar con la IA: {e}")
