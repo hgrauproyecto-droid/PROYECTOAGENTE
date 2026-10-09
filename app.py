@@ -11,10 +11,10 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("👥 Sistema Multi-Agente Autónomo (Versión Estable)")
+st.title("👥 Sistema Multi-Agente Autónomo (Versión Estable con Respaldo)")
 st.write(
-    "Versión optimizada y ligera para operar fluidamente dentro de la cuota"
-    " gratuita."
+    "Sistema optimizado con conmutación automática de servidores para evitar"
+    " interrupciones por alta demanda."
 )
 
 # Obtener credenciales de forma segura
@@ -60,7 +60,9 @@ else:
 
         with st.chat_message("assistant"):
             status_placeholder = st.empty()
-            status_placeholder.markdown("🤖 *Procesando solicitud...*")
+            status_placeholder.markdown(
+                "🤖 *Procesando con respaldo automático de servidores...*"
+            )
 
             try:
                 if WEBHOOK_URL:
@@ -77,19 +79,38 @@ else:
                         f"Consulta:\n{prompt}"
                     )
 
-                # Usamos gemini-flash-latest, alias oficial resistente a alta demanda
-                response = client.models.generate_content(
-                    model="gemini-flash-latest",
-                    contents=base_context,
-                    config=types.GenerateContentConfig(
-                        system_instruction=(
-                            "Eres un sistema multi-agente autónomo estructurado"
-                            " en tres roles que debes presentar claramente en"
-                            " tu respuesta:\n1. 🔍 [Investigador]\n2. ⚙️ [Ejecutor"
-                            " Técnico]\n3. 🛡️ [Auditor de Calidad]"
+                # Lista de modelos de respaldo para evitar bloqueos por alta demanda
+                models_to_try = [
+                    "gemini-2.5-flash",
+                    "gemini-flash-latest",
+                    "gemini-2.0-flash",
+                ]
+                response = None
+                last_error = None
+
+                for model_name in models_to_try:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=base_context,
+                            config=types.GenerateContentConfig(
+                                system_instruction=(
+                                    "Eres un sistema multi-agente autónomo"
+                                    " estructurado en tres roles que debes"
+                                    " presentar claramente en tu"
+                                    " respuesta:\n1. 🔍 [Investigador]\n2. ⚙️"
+                                    " [Ejecutor Técnico]\n3. 🛡️ [Auditor de"
+                                    " Calidad]"
+                                )
+                            ),
                         )
-                    ),
-                )
+                        break  # Si la conexión es exitosa, salimos del ciclo
+                    except Exception as err:
+                        last_error = err
+                        continue
+
+                if response is None:
+                    raise last_error
 
                 status_placeholder.empty()
                 final_answer = response.text
@@ -100,4 +121,8 @@ else:
                 )
             except Exception as e:
                 status_placeholder.empty()
-                st.error(f"Error al conectar con la IA: {e}")
+                st.error(
+                    f"⚠️ Los servidores están experimentando congestión"
+                    f" temporal. Por favor, espera 10 segundos y vuelve a"
+                    f" enviar tu mensaje. (Detalle: {e})"
+                )
