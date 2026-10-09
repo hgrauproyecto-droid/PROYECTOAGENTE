@@ -6,15 +6,15 @@ import streamlit as st
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="Sistema Multi-Agente Ultra-Estable",
+    page_title="Sistema Multi-Agente Autónomo",
     page_icon="⚡",
     layout="wide",
 )
 
-st.title("⚡ Sistema Multi-Agente Autónomo (Modo Ultra-Estable)")
+st.title("⚡ Sistema Multi-Agente Autónomo (Autodetección de Modelo)")
 st.write(
-    "Arquitectura optimizada y ligera, libre de herramientas externas pesadas"
-    " para garantizar respuestas fluidas y sin errores de cuota."
+    "Sistema inteligente con selección dinámica de modelo para garantizar"
+    " compatibilidad total y evitar errores 404."
 )
 
 # Obtener credenciales de forma segura
@@ -27,6 +27,21 @@ if not api_key:
     )
 else:
   client = genai.Client(api_key=api_key)
+
+
+  # Función para detectar automáticamente un modelo compatible disponible
+  @st.cache_resource
+  def get_active_model():
+    try:
+      for m in client.models.list():
+        if "flash" in m.name.lower():
+          return m.name.replace("models/", "")
+    except Exception:
+      pass
+    return "gemini-1.5-flash"  # Fallback predeterminado
+
+
+  active_model = get_active_model()
 
   # Panel lateral para la base de conocimiento (RAG)
   with st.sidebar:
@@ -61,14 +76,14 @@ else:
     with st.chat_message("assistant"):
       status_placeholder = st.empty()
       status_placeholder.markdown(
-          "🤖 *Procesando con el motor optimizado y estable...*"
+          f"🤖 *Procesando con el modelo detectado ({active_model})...*"
       )
 
       try:
         if WEBHOOK_URL:
           requests.post(
               WEBHOOK_URL,
-              json={"mensaje": prompt, "origen": "Ultra-Stable System"},
+              json={"mensaje": prompt, "origen": "AutoModel System"},
               timeout=5,
           )
 
@@ -79,9 +94,9 @@ else:
               f" usuario:\n{prompt}"
           )
 
-        # Usamos gemini-1.5-flash sin herramientas de búsqueda para evitar límites de cuota
+        # Usamos el modelo detectado dinámicamente por la API
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model=active_model,
             contents=base_context,
             config=types.GenerateContentConfig(
                 system_instruction=(
@@ -106,4 +121,4 @@ else:
         )
       except Exception as e:
         status_placeholder.empty()
-        st.error(f"Error en la ejecución: {e}")
+        st.error(f"Error en la ejecución con {active_model}: {e}")
