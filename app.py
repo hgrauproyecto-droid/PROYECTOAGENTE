@@ -1,3 +1,4 @@
+import time
 from google import genai
 from google.genai import types
 import pypdf
@@ -11,10 +12,10 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("⚡ Sistema Multi-Agente Autónomo (Versión Oficial)")
+st.title("⚡ Sistema Multi-Agente Autónomo (Modo con Reintento Automático)")
 st.write(
-    "Sistema configurado con el modelo oficial recomendado por Google"
-    " (`gemini-3.8-flash`)."
+    "Sistema optimizado con un bucle de espera inteligente para superar los"
+    " picos de alta demanda en los servidores (Error 503)."
 )
 
 # Obtener credenciales de forma segura
@@ -60,13 +61,16 @@ else:
 
     with st.chat_message("assistant"):
       status_placeholder = st.empty()
-      status_placeholder.markdown("🤖 *Procesando con el modelo oficial...*")
+      status_placeholder.markdown(
+          "🤖 *Servidor congestionado. Ejecutando reintento inteligente en"
+          " segundo plano...*"
+      )
 
       try:
         if WEBHOOK_URL:
           requests.post(
               WEBHOOK_URL,
-              json={"mensaje": prompt, "origen": "Official Model System"},
+              json={"mensaje": prompt, "origen": "Retry System"},
               timeout=5,
           )
 
@@ -77,23 +81,47 @@ else:
               f" usuario:\n{prompt}"
           )
 
-        # Usamos directamente gemini-3.8-flash, tal como lo exige el mensaje de error oficial de Google
-        response = client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=base_context,
-            config=types.GenerateContentConfig(
-                system_instruction=(
-                    "Eres un Sistema Multi-Agente Autónomo de Nivel Empresarial."
-                    " Responde y estructura la solución obligatoriamente en"
-                    " tres fases claras:\n\n1. 🔍 [Agente Investigador]: Analiza"
-                    " el problema y el contexto técnico.\n2. ⚙️ [Agente Ejecutor"
-                    " Técnico]: Desarrolla el código, arquitectura o solución"
-                    " detallada de forma profesional.\n3. 🛡️ [Agente Auditor de"
-                    " Calidad]: Revisa posibles fallos, seguridad y emite el"
-                    " dictamen final."
-                )
-            ),
-        )
+        # Sistema de reintentos automáticos ante saturación (Error 503 o 429)
+        response = None
+        max_retries = 4
+        for attempt in range(max_retries):
+          try:
+            response = client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=base_context,
+                config=types.GenerateContentConfig(
+                    system_instruction=(
+                        "Eres un Sistema Multi-Agente Autónomo de Nivel"
+                        " Empresarial. Responde y estructura la solución"
+                        " obligatoriamente en tres fases claras:\n\n1. 🔍"
+                        " [Agente Investigador]: Analiza el problema y el"
+                        " contexto técnico.\n2. ⚙️ [Agente Ejecutor Técnico]:"
+                        " Desarrolla el código, arquitectura o solución"
+                        " detallada de forma profesional.\n3. 🛡️ [Agente Auditor"
+                        " de Calidad]: Revisa posibles fallos, seguridad y"
+                        " emite el dictamen final."
+                    )
+                ),
+            )
+            if response and response.text:
+              break
+          except Exception as api_err:
+            if (
+                "503" in str(api_err)
+                or "UNAVAILABLE" in str(api_err)
+                or "429" in str(api_err)
+            ):
+              if attempt < max_retries - 1:
+                time.sleep(
+                    3 * (attempt + 1)
+                )  # Espera progresiva: 3s, 6s, 9s...
+                continue
+            raise api_err
+
+        if not response or not response.text:
+          raise Exception(
+              "No se pudo obtener respuesta tras los reintentos automáticos."
+          )
 
         status_placeholder.empty()
         final_output = response.text
@@ -104,4 +132,8 @@ else:
         )
       except Exception as e:
         status_placeholder.empty()
-        st.error(f"Error en la ejecución: {e}")
+        st.error(
+            f"⚠️ Los servidores experimentan alta demanda persistente. Por"
+            f" favor, espera unos segundos y reintenta tu mensaje. (Detalle:"
+            f" {e})"
+        )
