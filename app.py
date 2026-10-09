@@ -6,19 +6,15 @@ import streamlit as st
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="Sistema Multi-Agente Autónomo",
+    page_title="Sistema Multi-Agente Ultra-Estable",
     page_icon="⚡",
     layout="wide",
 )
 
-st.title(
-    "⚡ Sistema Multi-Agente Autónomo (Arquitectura Unificada de Alta"
-    " Eficiencia)"
-)
+st.title("⚡ Sistema Multi-Agente Autónomo (Modo Ultra-Estable)")
 st.write(
-    "Sistema optimizado para coordinar los tres roles especializados"
-    " (Investigador, Ejecutor y Auditor) en una sola llamada estructurada para"
-    " garantizar estabilidad total y evitar el error 429."
+    "Arquitectura optimizada y ligera, libre de herramientas externas pesadas"
+    " para garantizar respuestas fluidas y sin errores de cuota."
 )
 
 # Obtener credenciales de forma segura
@@ -46,7 +42,7 @@ else:
           document_context += page.extract_text() + "\n"
       else:
         document_context = uploaded_file.read().decode("utf-8")
-      st.success("¡Documento cargado correctamente en la memoria!")
+      st.success("¡Documento cargado correctamente!")
 
   # Inicializar historial de chat
   if "messages" not in st.session_state:
@@ -57,9 +53,7 @@ else:
       st.markdown(message["content"])
 
   # Entrada del usuario
-  if prompt := st.chat_input(
-      "Escribe la tarea compleja para el consejo multi-agente..."
-  ):
+  if prompt := st.chat_input("Escribe tu consulta o tarea compleja..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
       st.markdown(prompt)
@@ -67,46 +61,39 @@ else:
     with st.chat_message("assistant"):
       status_placeholder = st.empty()
       status_placeholder.markdown(
-          "🤖 *El consejo multi-agente está investigando, ejecutando y"
-          " auditando tu solicitud...*"
+          "🤖 *Procesando con el motor optimizado y estable...*"
       )
 
       try:
-        # Disparar automatización externa si está configurada
         if WEBHOOK_URL:
           requests.post(
               WEBHOOK_URL,
-              json={"mensaje": prompt, "origen": "Unified Agent System"},
+              json={"mensaje": prompt, "origen": "Ultra-Stable System"},
               timeout=5,
           )
 
         base_context = prompt
         if document_context:
           base_context = (
-              f"Documento de referencia de la Base de Conocimiento:\n"
-              f"{document_context}\n\nConsulta o Tarea del Usuario:\n{prompt}"
+              f"Documento de referencia:\n{document_context}\n\nConsulta del"
+              f" usuario:\n{prompt}"
           )
 
-        # Instrucciones de sistema para estructurar los tres roles de forma interna y atómica
-        system_instruction = (
-            "Eres un Sistema Multi-Agente Autónomo de Nivel Empresarial."
-            " Procesa la tarea del usuario estructurando tu respuesta final de"
-            " manera clara en tres fases obligatorias:\n\n1. 🔍 **[Agente"
-            " Investigador]:** Analiza el contexto, recopila datos técnicos"
-            " clave y evalúa las fuentes o requerimientos.\n2. ⚙️ **[Agente"
-            " Ejecutor Técnico]:** Desarrolla la solución práctica, código,"
-            " arquitectura o guías detalladas solicitadas.\n3. 🛡️ **[Agente"
-            " Auditor de Calidad]:** Revisa la solución, valida la robustez,"
-            " la seguridad y emite el dictamen final de aprobación u"
-            " optimización."
-        )
-
+        # Usamos gemini-1.5-flash sin herramientas de búsqueda para evitar límites de cuota
         response = client.models.generate_content(
-            model="gemini-3.8-flash",
+            model="gemini-1.5-flash",
             contents=base_context,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                tools=[{"google_search": {}}],
+                system_instruction=(
+                    "Eres un Sistema Multi-Agente Autónomo de Nivel Empresarial."
+                    " Responde y estructura la solución obligatoriamente en"
+                    " tres fases claras:\n\n1. 🔍 [Agente Investigador]: Analiza"
+                    " el problema y el contexto técnico.\n2. ⚙️ [Agente Ejecutor"
+                    " Técnico]: Desarrolla el código, arquitectura o solución"
+                    " detallada de forma profesional.\n3. 🛡️ [Agente Auditor de"
+                    " Calidad]: Revisa posibles fallos, seguridad y emite el"
+                    " dictamen final."
+                )
             ),
         )
 
@@ -119,8 +106,4 @@ else:
         )
       except Exception as e:
         status_placeholder.empty()
-        st.error(
-            f"⚠️ Ocurrió un error al procesar la solicitud: {e}. Por favor,"
-            f" intenta de nuevo en unos segundos."
-        )
-          
+        st.error(f"Error en la ejecución: {e}")
