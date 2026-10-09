@@ -11,10 +11,10 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("⚡ Sistema Multi-Agente Autónomo (Autodetección de Modelo)")
+st.title("⚡ Sistema Multi-Agente Autónomo (Versión Oficial)")
 st.write(
-    "Sistema inteligente con selección dinámica de modelo para garantizar"
-    " compatibilidad total y evitar errores 404."
+    "Sistema configurado con el modelo oficial recomendado por Google"
+    " (`gemini-3.8-flash`)."
 )
 
 # Obtener credenciales de forma segura
@@ -27,21 +27,6 @@ if not api_key:
     )
 else:
   client = genai.Client(api_key=api_key)
-
-
-  # Función para detectar automáticamente un modelo compatible disponible
-  @st.cache_resource
-  def get_active_model():
-    try:
-      for m in client.models.list():
-        if "flash" in m.name.lower():
-          return m.name.replace("models/", "")
-    except Exception:
-      pass
-    return "gemini-1.5-flash"  # Fallback predeterminado
-
-
-  active_model = get_active_model()
 
   # Panel lateral para la base de conocimiento (RAG)
   with st.sidebar:
@@ -75,15 +60,13 @@ else:
 
     with st.chat_message("assistant"):
       status_placeholder = st.empty()
-      status_placeholder.markdown(
-          f"🤖 *Procesando con el modelo detectado ({active_model})...*"
-      )
+      status_placeholder.markdown("🤖 *Procesando con el modelo oficial...*")
 
       try:
         if WEBHOOK_URL:
           requests.post(
               WEBHOOK_URL,
-              json={"mensaje": prompt, "origen": "AutoModel System"},
+              json={"mensaje": prompt, "origen": "Official Model System"},
               timeout=5,
           )
 
@@ -94,9 +77,9 @@ else:
               f" usuario:\n{prompt}"
           )
 
-        # Usamos el modelo detectado dinámicamente por la API
+        # Usamos directamente gemini-3.8-flash, tal como lo exige el mensaje de error oficial de Google
         response = client.models.generate_content(
-            model=active_model,
+            model="gemini-3.8-flash",
             contents=base_context,
             config=types.GenerateContentConfig(
                 system_instruction=(
@@ -121,4 +104,4 @@ else:
         )
       except Exception as e:
         status_placeholder.empty()
-        st.error(f"Error en la ejecución con {active_model}: {e}")
+        st.error(f"Error en la ejecución: {e}")
