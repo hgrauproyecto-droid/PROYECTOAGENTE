@@ -10,11 +10,8 @@ def get_gemini_client():
 
 
 def safe_generate(client, model, contents, config=None):
-  """Función de seguridad con reintentos automáticos y espera progresiva
-
-  para evitar saturar la cuota gratuita (Error 429).
-  """
-  retries = 3
+  """Sistema de reintentos automáticos con espera exponencial para evitar el Error 429."""
+  retries = 5
   for attempt in range(retries):
     try:
       response = client.models.generate_content(
@@ -24,11 +21,11 @@ def safe_generate(client, model, contents, config=None):
     except Exception as e:
       if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
         if attempt < retries - 1:
-          sleep_time = 5 * (attempt + 1)  # 5s, 10s de espera progresiva
+          sleep_time = 12 * (attempt + 1)  # 12s, 24s, 36s... de espera
           time.sleep(sleep_time)
           continue
       raise e
-  raise Exception("Se agotaron los reintentos por alta congestión.")
+  raise Exception("Se agotaron los reintentos por límite de cuota (429).")
 
 
 def researcher_node(state: dict) -> dict:
@@ -44,7 +41,7 @@ def researcher_node(state: dict) -> dict:
 
   response = safe_generate(
       client,
-      model="gemini-flash-latest",
+      model="gemini-3.8-flash",
       contents=prompt,
       config=types.GenerateContentConfig(
           tools=[{"google_search": {}}],
@@ -52,7 +49,9 @@ def researcher_node(state: dict) -> dict:
       ),
   )
 
-  time.sleep(3)  # Pausa estratégica para proteger el límite de la API
+  time.sleep(
+      8
+  )  # Pausa de cortesía para proteger el límite de la cuota gratuita
   return {"research_data": [response.text]}
 
 
@@ -72,7 +71,7 @@ Desarrolla la solución técnica detallada, arquitectura, código o estrategia r
 
   response = safe_generate(
       client,
-      model="gemini-flash-latest",
+      model="gemini-3.8-flash",
       contents=prompt,
       config=types.GenerateContentConfig(
           system_instruction=(
@@ -81,7 +80,9 @@ Desarrolla la solución técnica detallada, arquitectura, código o estrategia r
       ),
   )
 
-  time.sleep(3)  # Pausa estratégica para proteger el límite de la API
+  time.sleep(
+      8
+  )  # Pausa de cortesía para proteger el límite de la cuota gratuita
   return {
       "code_generated": response.text,
       "execution_result": {"success": True, "output": "Simulación validada"},
@@ -105,7 +106,7 @@ Si encuentras fallos, comienza con 'RECHAZADO' y explica detalladamente qué se 
 
   response = safe_generate(
       client,
-      model="gemini-flash-latest",
+      model="gemini-3.8-flash",
       contents=prompt,
       config=types.GenerateContentConfig(
           system_instruction=(
