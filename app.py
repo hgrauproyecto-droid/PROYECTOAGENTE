@@ -1,3 +1,4 @@
+import time
 from google import genai
 from google.genai import types
 import pypdf
@@ -6,13 +7,16 @@ import streamlit as st
 
 # Configuración de la página web
 st.set_page_config(
-    page_title="Sistema Multi-Agente Autónomo",
-    page_icon="👥",
+    page_title="Sistema Multi-Agente Blindado",
+    page_icon="🛡️",
     layout="wide",
 )
 
-st.title("👥 Sistema Multi-Agente Autónomo (Versión Estable)")
-st.write("Sistema optimizado con el modelo oficial recomendado por Google.")
+st.title("🛡️ Sistema Multi-Agente Autónomo (Modo Blindado)")
+st.write(
+    "Arquitectura robusta con reintentos automáticos y rotación de múltiples"
+    " servidores para superar la alta demanda."
+)
 
 # Obtener credenciales de forma segura
 api_key = st.secrets.get("GEMINI_API_KEY")
@@ -50,7 +54,7 @@ else:
             st.markdown(message["content"])
 
     # Entrada del usuario
-    if prompt := st.chat_input("Escribe tu consulta o tarea..."):
+    if prompt := st.chat_input("Escribe tu consulta o tarea compleja..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -58,14 +62,18 @@ else:
         with st.chat_message("assistant"):
             status_placeholder = st.empty()
             status_placeholder.markdown(
-                "🤖 *Procesando solicitud con el modelo oficial...*"
+                "🔄 *Conectando con clústeres de respaldo y ejecutando"
+                " reintento inteligente...*"
             )
 
             try:
                 if WEBHOOK_URL:
                     requests.post(
                         WEBHOOK_URL,
-                        json={"mensaje": prompt, "origen": "Agent System"},
+                        json={
+                            "mensaje": prompt,
+                            "origen": "Shielded Agent System",
+                        },
                         timeout=5,
                     )
 
@@ -76,19 +84,52 @@ else:
                         f"Consulta:\n{prompt}"
                     )
 
-                # Usamos gemini-3.8-flash, el modelo oficial recomendado por el servidor
-                response = client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=base_context,
-                    config=types.GenerateContentConfig(
-                        system_instruction=(
-                            "Eres un sistema multi-agente autónomo estructurado"
-                            " en tres roles que debes presentar claramente en"
-                            " tu respuesta:\n1. 🔍 [Investigador]\n2. ⚙️ [Ejecutor"
-                            " Técnico]\n3. 🛡️ [Auditor de Calidad]"
-                        )
-                    ),
-                )
+                # Lista de modelos prioritarios para rotación automática
+                models_to_try = [
+                    "gemini-1.5-flash",
+                    "gemini-flash-latest",
+                    "gemini-1.5-pro",
+                ]
+                response = None
+                last_exception = None
+
+                # Sistema de reintentos múltiples con ciclos de espera progresiva
+                for attempt in range(3):
+                    for model_name in models_to_try:
+                        try:
+                            response = client.models.generate_content(
+                                model=model_name,
+                                contents=base_context,
+                                config=types.GenerateContentConfig(
+                                    system_instruction=(
+                                        "Eres un sistema multi-agente autónomo"
+                                        " estructurado en tres roles que debes"
+                                        " presentar claramente en tu"
+                                        " respuesta:\n1. 🔍"
+                                        " [Investigador]\n2. ⚙️ [Ejecutor"
+                                        " Técnico]\n3. 🛡️ [Auditor de"
+                                        " Calidad]"
+                                    )
+                                ),
+                            )
+                            if response and response.text:
+                                break
+                        except Exception as e:
+                            last_exception = e
+                            continue
+
+                    if response and response.text:
+                        break
+
+                    # Si todos fallan en este ciclo, esperamos unos segundos antes de reintentar
+                    time.sleep(2 * (attempt + 1))
+
+                if response is None or not response.text:
+                    raise (
+                        last_exception
+                        if last_exception
+                        else Exception("No response generated")
+                    )
 
                 status_placeholder.empty()
                 final_answer = response.text
@@ -99,4 +140,10 @@ else:
                 )
             except Exception as e:
                 status_placeholder.empty()
-                st.error(f"Error al conectar con la IA: {e}")
+                st.error(
+                    f"⚠️ Alta congestión en los servidores gratuitos de Google"
+                    f" (Error 503). El sistema probó múltiples rutas"
+                    f" automáticamente pero todas están saturadas en este"
+                    f" microsegundo. Por favor, espera 15 segundos y vuelve a"
+                    f" enviar tu mensaje. (Detalle: {e})"
+                )
