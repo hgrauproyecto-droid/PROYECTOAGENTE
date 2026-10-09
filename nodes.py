@@ -1,3 +1,4 @@
+import time
 from google import genai
 from google.genai import types
 import streamlit as st
@@ -6,6 +7,28 @@ import streamlit as st
 def get_gemini_client():
   api_key = st.secrets.get("GEMINI_API_KEY")
   return genai.Client(api_key=api_key)
+
+
+def safe_generate(client, model, contents, config=None):
+  """Función de seguridad con reintentos automáticos y espera progresiva
+
+  para evitar saturar la cuota gratuita (Error 429).
+  """
+  retries = 3
+  for attempt in range(retries):
+    try:
+      response = client.models.generate_content(
+          model=model, contents=contents, config=config
+      )
+      return response
+    except Exception as e:
+      if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+        if attempt < retries - 1:
+          sleep_time = 5 * (attempt + 1)  # 5s, 10s de espera progresiva
+          time.sleep(sleep_time)
+          continue
+      raise e
+  raise Exception("Se agotaron los reintentos por alta congestión.")
 
 
 def researcher_node(state: dict) -> dict:
@@ -19,7 +42,8 @@ def researcher_node(state: dict) -> dict:
       f" contextuales necesarios:\n\n{task}"
   )
 
-  response = client.models.generate_content(
+  response = safe_generate(
+      client,
       model="gemini-flash-latest",
       contents=prompt,
       config=types.GenerateContentConfig(
@@ -28,6 +52,7 @@ def researcher_node(state: dict) -> dict:
       ),
   )
 
+  time.sleep(3)  # Pausa estratégica para proteger el límite de la API
   return {"research_data": [response.text]}
 
 
@@ -45,7 +70,8 @@ Feedback de auditoría anterior: {feedback}
 
 Desarrolla la solución técnica detallada, arquitectura, código o estrategia requerida de manera profesional y autónoma."""
 
-  response = client.models.generate_content(
+  response = safe_generate(
+      client,
       model="gemini-flash-latest",
       contents=prompt,
       config=types.GenerateContentConfig(
@@ -55,6 +81,7 @@ Desarrolla la solución técnica detallada, arquitectura, código o estrategia r
       ),
   )
 
+  time.sleep(3)  # Pausa estratégica para proteger el límite de la API
   return {
       "code_generated": response.text,
       "execution_result": {"success": True, "output": "Simulación validada"},
@@ -76,7 +103,8 @@ Evalúa si cumple con los estándares de robustez, seguridad y precisión.
 Si todo es correcto, comienza tu respuesta estrictamente con la palabra 'APROBADO'.
 Si encuentras fallos, comienza con 'RECHAZADO' y explica detalladamente qué se debe corregir."""
 
-  response = client.models.generate_content(
+  response = safe_generate(
+      client,
       model="gemini-flash-latest",
       contents=prompt,
       config=types.GenerateContentConfig(
